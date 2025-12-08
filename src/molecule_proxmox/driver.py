@@ -78,6 +78,15 @@ class Proxmox(Driver):
         ).format(connection_options)
 
     @property
+    def login_cmd_template_winrm(self):
+        return (
+             "powershell.exe -Command "
+             "\"Enter-PSSession -ComputerName {{address}} "
+             "-Port {{port}} "
+             "-Credential (Get-Credential -UserName {{user}})\""
+        )
+
+    @property
     def default_safe_files(self):
         return []
 
@@ -92,14 +101,29 @@ class Proxmox(Driver):
     def ansible_connection_options(self, instance_name):
         try:
             d = self._get_instance_config(instance_name)
-            return {
-                "ansible_user": d["user"],
-                "ansible_host": d["address"],
-                "ansible_port": d["port"],
-                "ansible_private_key_file": d["identity_file"],
-                "connection": "ssh",
-                "ansible_ssh_common_args": " ".join(self.ssh_connection_options),  # noqa: E501
-            }
+            os_type = d.get("os_type", "linux")
+
+            if os_type == "windows":
+                # Windows WinRM connection
+                return {
+                    "ansible_user": d["user"],
+                    "ansible_host": d["address"],
+                    "ansible_port": d["port"],
+                    "ansible_password": d.get("password"),
+                    "connection": "winrm",
+                    "ansible_winrm_transport": d.get("winrm_transport", "ntlm"),
+                    "ansible_winrm_server_cert_validation": d.get("winrm_cert_validation", "ignore"),
+                }
+            else:
+                # Linux SSH connection (default)
+                return {
+                    "ansible_user": d["user"],
+                    "ansible_host": d["address"],
+                    "ansible_port": d["port"],
+                    "ansible_private_key_file": d["identity_file"],
+                    "connection": "ssh",
+                    "ansible_ssh_common_args": " ".join(self.ssh_connection_options),  # noqa: E501
+                }
         except StopIteration:
             return {}
         except IOError:
