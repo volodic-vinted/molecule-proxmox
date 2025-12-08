@@ -171,8 +171,23 @@ def i2a(interfaces):
             for ip_address in interface['ip-addresses']:
                 atype = ip_address.get('ip-address-type', '')
                 aip = ip_address.get('ip-address', '')
-                if aip and atype == 'ipv4' and not aip.startswith('127.'):
+                if aip and atype == 'ipv4':
+                    if aip.startswith('127.') or aip.startswith('169.254.'): # adds loopback
+                        continue
                     addrs.append(aip)
+
+    def priority(ip):
+        if ip.startswith('10.'):
+            return 0
+        elif ip.startswith('192.168.'):
+            return 1
+        elif ip.startswith('172.'):
+            parts = ip.split('.')
+            if len(parts) >= 2 and 16 <= int(parts[1]) <= 31:
+                return 2
+        return 3
+
+    addrs.sort(key=priority)
     return addrs
 
 
