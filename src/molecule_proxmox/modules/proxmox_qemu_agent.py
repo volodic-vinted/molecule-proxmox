@@ -166,16 +166,15 @@ def i2a(interfaces):
 
     """
     addrs = []
-    print("======== DEBUG i2a ========")
-    print("Volodic Version in use")
+    syslog.syslog("====== TEMPORARY MESSAGE ======")
     for interface in interfaces:
         if 'ip-addresses' in interface:
             for ip_address in interface['ip-addresses']:
                 atype = ip_address.get('ip-address-type', '')
                 aip = ip_address.get('ip-address', '')
                 if aip and atype == 'ipv4':
-                    if aip.startswith('127.') or aip.startswith('169.254.'): # adds loopback
-                        print('Skipping address {0}'.format(aip))
+                    if aip.startswith('127.') or aip.startswith('169.254.'):
+                        syslog.syslog('Skipping address {0}'.format(aip))
                         continue
                     addrs.append(aip)
 
