@@ -82,13 +82,13 @@ username:s:{user}
 def launch_rdp_macos(address, user, port=3389, password=None):
     """Launch RDP on macOS."""
     print(f"Opening RDP connection to {address}:{port} as {user}...")
-
+    
     # Build RDP URL with optional password
     rdp_url = f"rdp://full%20address=s:{address}:{port}&username=s:{user}"
     if password:
         # Note: Some RDP clients on macOS don't support password in URL for security reasons
         rdp_url += f"&password=s:{password}"
-
+    
     try:
         result = subprocess.run(
             ['open', rdp_url],
