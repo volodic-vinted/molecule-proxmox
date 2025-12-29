@@ -13,10 +13,8 @@
           - '!all'
           - '!min'
           - 'os_family'
-      # Ignore errors in case gathering fails, we'll use defaults
       ignore_errors: yes
 
-    # Linux-specific hostname configuration
     - name: "Set host name (Linux)."
       when:
         - molecule_yml.driver.options.sethostname | d('yes') | bool
@@ -44,7 +42,6 @@
             path: /etc/hosts
             line: "{{ ansible_default_ipv4.address }} {{ ansible_hostname }}"
 
-    # Windows-specific hostname configuration
     - name: "Set host name (Windows)."
       when:
         - molecule_yml.driver.options.sethostname | d('yes') | bool

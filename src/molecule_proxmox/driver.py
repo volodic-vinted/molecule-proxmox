@@ -68,7 +68,26 @@ class Proxmox(Driver):
 
     @property
     def login_cmd_template(self):
+        """Return login command template based on instance OS type."""
+        # Try to determine which instance we're logging into
+        instance_name = self._get_target_instance_name()
+
+        if instance_name:
+            try:
+                instance_config = self._get_instance_config(instance_name)
+                os_type = instance_config.get("os_type", "linux").lower()
+
+                if os_type == "windows":
+                    LOG.info('Opening RDP connection to Windows instance')
+                    # Use Python script to open RDP connection with system's default client
+                    rdp_launcher = os.path.join(os.path.dirname(__file__), "rdp_launcher.py")
+                    return "python3 " + rdp_launcher + " {{address}} {{user}} {{port}} {{password}}"
+            except (StopIteration, IOError, KeyError):
+                # If we can't determine the instance, fall back to SSH
+                pass
+
         connection_options = " ".join(self.ssh_connection_options)
+        LOG.debug('Using SSH login command template')
         return (
             "ssh {{address}} "
             "-l {{user}} "
@@ -77,14 +96,20 @@ class Proxmox(Driver):
             "{}"
         ).format(connection_options)
 
-    @property
-    def login_cmd_template_winrm(self):
-        return (
-             "powershell.exe -Command "
-             "\"Enter-PSSession -ComputerName {{address}} "
-             "-Port {{port}} "
-             "-Credential (Get-Credential -UserName {{user}})\""
-        )
+    def _get_target_instance_name(self):
+        """Extract the target instance name from molecule command args."""
+        # The instance name is typically passed as a positional argument to 'molecule login'
+        if hasattr(self._config, 'command_args') and self._config.command_args:
+            # Try to get the host/instance argument
+            host = self._config.command_args.get('host')
+            if host:
+                return host
+
+        # Also check subcommand for older molecule versions
+        if hasattr(self._config, 'subcommand'):
+            return getattr(self._config, 'subcommand', None)
+
+        return None
 
     @property
     def default_safe_files(self):
@@ -104,7 +129,6 @@ class Proxmox(Driver):
             os_type = d.get("os_type", "linux")
 
             if os_type == "windows":
-                # Windows WinRM connection
                 return {
                     "ansible_user": d["user"],
                     "ansible_host": d["address"],
@@ -115,7 +139,6 @@ class Proxmox(Driver):
                     "ansible_winrm_server_cert_validation": d.get("winrm_cert_validation", "ignore"),
                 }
             else:
-                # Linux SSH connection (default)
                 return {
                     "ansible_user": d["user"],
                     "ansible_host": d["address"],
