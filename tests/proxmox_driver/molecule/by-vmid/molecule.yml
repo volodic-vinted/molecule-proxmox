@@ -14,7 +14,7 @@ driver:
     ssh_user: "${TEST_PROXMOX_SSH_USER}"
     ssh_identity_file: "${TEST_PROXMOX_SSH_IDENTITY_FILE}"
     full: "${TEST_PROXMOX_FULL_CLONE:-true}"
-    timeout: 120
+    timeout: 600
     debug: "${TEST_PROXMOX_DEBUG}"
 
 platforms:

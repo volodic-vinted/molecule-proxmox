@@ -15,7 +15,7 @@ driver:
     # Default template name. Defaults to 'molecule' if not set.
     template_name: "${TEST_PROXMOX_TEMPLATE_NAME}"
     full: "${TEST_PROXMOX_FULL_CLONE:-true}"
-    timeout: 120
+    timeout: 600
     debug: "${TEST_PROXMOX_DEBUG}"
 
 platforms:
