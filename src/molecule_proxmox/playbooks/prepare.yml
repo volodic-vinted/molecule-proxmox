@@ -3,11 +3,22 @@
   hosts: all
   gather_facts: no
   tasks:
-    - name: "Waiting for instance ssh connection."
+    - name: "Waiting for instance connection."
       ansible.builtin.wait_for_connection:
+        timeout: "{{ 300 if ansible_connection == 'winrm' else 60 }}"
 
-    - name: "Set host name."
-      when: molecule_yml.driver.options.sethostname | d('yes') | bool
+    - name: "Gather minimal facts for OS detection."
+      ansible.builtin.setup:
+        gather_subset:
+          - '!all'
+          - '!min'
+          - 'os_family'
+      ignore_errors: yes
+
+    - name: "Set host name (Linux)."
+      when:
+        - molecule_yml.driver.options.sethostname | d('yes') | bool
+        - ansible_os_family is defined and ansible_os_family != "Windows"
       block:
         - name: "Set instance hostname."
           become: yes
@@ -30,3 +41,21 @@
             state: present
             path: /etc/hosts
             line: "{{ ansible_default_ipv4.address }} {{ ansible_hostname }}"
+
+    - name: "Set host name (Windows)."
+      when:
+        - molecule_yml.driver.options.sethostname | d('yes') | bool
+        - ansible_os_family is defined and ansible_os_family == "Windows"
+      block:
+        - name: "Set instance hostname (Windows)."
+          ansible.windows.win_hostname:
+            name: "{{ inventory_hostname }}"
+          register: win_hostname_result
+
+        - name: "Reboot if hostname changed."
+          ansible.windows.win_reboot:
+            reboot_timeout: 600
+          when: win_hostname_result.reboot_required | d(false)
+
+        - name: "Gather facts (Windows)."
+          ansible.builtin.setup:

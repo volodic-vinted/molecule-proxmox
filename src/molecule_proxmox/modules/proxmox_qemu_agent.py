@@ -108,7 +108,8 @@ def query_vm(module, proxmox, vm):
         reply = None
         try:
             reply = proxmox_node.qemu(vmid).agent.get('network-get-interfaces')  # noqa: E501
-            # syslog.syslog('network-get-interfaces: {0}'.format(reply))
+            if module.params.get('debug', False):
+                syslog.syslog('network-get-interfaces reply: {0}'.format(reply))
         except ResourceException as e:
             if e.status_code == 500 and 'VM {0} is not running'.format(vmid) in e.content:  # noqa: 501
                 start_vm(module, proxmox, vm)
@@ -168,17 +169,35 @@ def i2a(module, interfaces):
     addrs = []
     module.warn("====== TEMPORARY MESSAGE ======")
     for interface in interfaces:
+        interface_name = interface.get('name', '')
+
+        # Skip obvious loopback interfaces by name
+        if interface_name.lower() in ['lo', 'loopback']:
+            continue
+
         if 'ip-addresses' in interface:
             for ip_address in interface['ip-addresses']:
                 atype = ip_address.get('ip-address-type', '')
                 aip = ip_address.get('ip-address', '')
+
                 if aip and atype == 'ipv4':
+                    # Filter loopback and APIPA addresses
                     if aip.startswith('127.') or aip.startswith('169.254.'):
-                        module.warn('Skipping address {0}'.format(aip))
+                        syslog.syslog('Skipping loopback/APIPA address {0} on {1}'.format(aip, interface_name))
                         continue
+
+                    syslog.syslog('Found IPv4 address {0} on interface {1}'.format(aip, interface_name))
                     addrs.append(aip)
 
     def priority(ip):
+        """
+        Prioritize private IP addresses.
+        Priority order:
+        0 - Class A private (10.0.0.0/8)
+        1 - Class C private (192.168.0.0/16)
+        2 - Class B private (172.16.0.0/12)
+        3 - Public IPs
+        """
         if ip.startswith('10.'):
             return 0
         elif ip.startswith('192.168.'):
@@ -190,6 +209,12 @@ def i2a(module, interfaces):
         return 3
 
     addrs.sort(key=priority)
+
+    if addrs:
+        syslog.syslog('Detected IP addresses (sorted by priority): {0}'.format(addrs))
+    else:
+        syslog.syslog('No valid IPv4 addresses detected')
+
     return addrs
 
 
@@ -215,6 +240,7 @@ def run_module():
             validate_certs=dict(type='bool', default=False),
             vmid=dict(type='int', required=True),
             timeout=dict(type='int', default=300),
+            debug=dict(type='bool', default=False),
         ),
         required_together=[('api_token_id', 'api_token_secret')],
         required_one_of=[('api_password', 'api_token_id')],

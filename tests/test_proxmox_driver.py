@@ -26,6 +26,8 @@ def molecule(command, *args):
     assert rc == 0
 
 
+@pytest.mark.integration
+@pytest.mark.skipif(not os.getenv('TEST_PROXMOX_HOST'), reason="Integration tests require Proxmox environment variables")
 def test_molecule_init_scenario(tmpdir):
     print('')
     with chdir(tmpdir):
@@ -36,11 +38,20 @@ def test_molecule_init_scenario(tmpdir):
         assert pathlib.Path('molecule/default/molecule.yml').exists()
 
 
+@pytest.mark.integration
+@pytest.mark.skipif(not os.getenv('TEST_PROXMOX_HOST'), reason="Integration tests require Proxmox environment variables")
 @pytest.mark.parametrize('scenario', [
                            'default', 'by-name', 'by-vmid', 'cloud-init',
                            'secrets-file', 'secrets-script', 'linked-clone'])
 def test_molecule_test(scenario):
     print('')
+
+    if scenario == 'secrets-file' and not os.getenv('TEST_PROXMOX_SECRETS_FILE'):
+        pytest.skip("secrets-file scenario requires TEST_PROXMOX_SECRETS_FILE environment variable")
+
+    if scenario == 'secrets-script' and not os.getenv('TEST_PROXMOX_SECRETS_SCRIPT'):
+        pytest.skip("secrets-script scenario requires TEST_PROXMOX_SECRETS_SCRIPT environment variable")
+
     testdir = pathlib.Path(__file__).resolve().parent
     projectdir = testdir / 'proxmox_driver'
     with chdir(projectdir):

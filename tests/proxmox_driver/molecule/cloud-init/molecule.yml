@@ -8,10 +8,13 @@ driver:
     api_host: "${TEST_PROXMOX_HOST}"
     api_user: "${TEST_PROXMOX_USER}"
     api_password: "${TEST_PROXMOX_PASSWORD}"
+    api_token_id: "${TEST_PROXMOX_TOKEN_ID}"
+    api_token_secret: "${TEST_PROXMOX_TOKEN_SECRET}"
     node: "${TEST_PROXMOX_NODE}"
     ssh_user: "${TEST_PROXMOX_SSH_USER}"
     ssh_identity_file: "${TEST_PROXMOX_SSH_IDENTITY_FILE}"
     full: "${TEST_PROXMOX_FULL_CLONE:-true}"
+    timeout: 600
     debug: "${TEST_PROXMOX_DEBUG}"
 
 platforms:

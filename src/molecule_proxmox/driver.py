@@ -68,7 +68,24 @@ class Proxmox(Driver):
 
     @property
     def login_cmd_template(self):
+        """Return login command template based on instance OS type."""
+        instance_name = self._get_target_instance_name()
+
+        if instance_name:
+            try:
+                instance_config = self._get_instance_config(instance_name)
+                os_type = instance_config.get("os_type", "linux").lower()
+
+                if os_type == "windows":
+                    LOG.info('Opening RDP connection to Windows instance')
+                    rdp_launcher = os.path.join(os.path.dirname(__file__), "rdp_launcher.py")
+                    return "python3 " + rdp_launcher + " {{address}} {{user}} {{port}} {{password}}"
+            except (StopIteration, IOError, KeyError):
+                # If cannot determine os - fall back to ssh
+                pass
+
         connection_options = " ".join(self.ssh_connection_options)
+        LOG.debug('Using SSH login command template')
         return (
             "ssh {{address}} "
             "-l {{user}} "
@@ -76,6 +93,21 @@ class Proxmox(Driver):
             "-i {{identity_file}} "
             "{}"
         ).format(connection_options)
+
+    def _get_target_instance_name(self):
+        """Extract the target instance name from molecule command args."""
+        # The instance name is typically passed as a positional argument to 'molecule login'
+        if hasattr(self._config, 'command_args') and self._config.command_args:
+            # Try to get the host/instance argument
+            host = self._config.command_args.get('host')
+            if host:
+                return host
+
+        # Also check subcommand for older molecule versions
+        if hasattr(self._config, 'subcommand'):
+            return getattr(self._config, 'subcommand', None)
+
+        return None
 
     @property
     def default_safe_files(self):
@@ -92,14 +124,27 @@ class Proxmox(Driver):
     def ansible_connection_options(self, instance_name):
         try:
             d = self._get_instance_config(instance_name)
-            return {
-                "ansible_user": d["user"],
-                "ansible_host": d["address"],
-                "ansible_port": d["port"],
-                "ansible_private_key_file": d["identity_file"],
-                "connection": "ssh",
-                "ansible_ssh_common_args": " ".join(self.ssh_connection_options),  # noqa: E501
-            }
+            os_type = d.get("os_type", "linux")
+
+            if os_type == "windows":
+                return {
+                    "ansible_user": d["user"],
+                    "ansible_host": d["address"],
+                    "ansible_port": d["port"],
+                    "ansible_password": d.get("password"),
+                    "connection": "winrm",
+                    "ansible_winrm_transport": d.get("winrm_transport", "ntlm"),
+                    "ansible_winrm_server_cert_validation": d.get("winrm_cert_validation", "ignore"),
+                }
+            else:
+                return {
+                    "ansible_user": d["user"],
+                    "ansible_host": d["address"],
+                    "ansible_port": d["port"],
+                    "ansible_private_key_file": d["identity_file"],
+                    "connection": "ssh",
+                    "ansible_ssh_common_args": " ".join(self.ssh_connection_options),  # noqa: E501
+                }
         except StopIteration:
             return {}
         except IOError:

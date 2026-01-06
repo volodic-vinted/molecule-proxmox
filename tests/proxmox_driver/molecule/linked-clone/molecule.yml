@@ -9,11 +9,14 @@ driver:
     api_port: ${TEST_PROXMOX_PORT}
     api_user: "${TEST_PROXMOX_USER}"
     api_password: "${TEST_PROXMOX_PASSWORD}"
+    api_token_id: "${TEST_PROXMOX_TOKEN_ID}"
+    api_token_secret: "${TEST_PROXMOX_TOKEN_SECRET}"
     node: "${TEST_PROXMOX_NODE}"
     ssh_user: "${TEST_PROXMOX_SSH_USER}"
     ssh_identity_file: "${TEST_PROXMOX_SSH_IDENTITY_FILE}"
     template_name: "${TEST_PROXMOX_TEMPLATE_NAME}"
     full: "false"
+    timeout: 600
     debug: "${TEST_PROXMOX_DEBUG}"
 
 platforms:
