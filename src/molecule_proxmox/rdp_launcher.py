@@ -13,7 +13,6 @@ import os
 import platform
 import subprocess
 import tempfile
-from pathlib import Path
 
 
 def create_rdp_file(address, user, port=3389, password=None):
@@ -90,7 +89,6 @@ def launch_rdp_macos(address, user, port=3389, password=None):
             timeout=5
         )
         if result.returncode == 0:
-            print("Opened Microsoft Remote Desktop")
             print(f"Connection: {address}:{port}")
             print(f"Username: {user}")
             return True
@@ -106,7 +104,6 @@ def launch_rdp_macos(address, user, port=3389, password=None):
             timeout=5
         )
         if result.returncode == 0:
-            print("Opened RDP file with default application")
             print(f"Connection: {address}:{port}")
             print(f"Username: {user}")
             subprocess.Popen(['sh', '-c', f'sleep 3600 && rm -f {rdp_file}'])
@@ -187,7 +184,6 @@ def main():
     password = sys.argv[4] if len(sys.argv) > 4 else None
 
     system = platform.system()
-
     success = False
     if system == 'Darwin':
         success = launch_rdp_macos(address, user, port, password)
@@ -202,13 +198,6 @@ def main():
     if not success:
         print("\nFailed to launch RDP client")
         print("\nPlease install an RDP client:")
-        if system == 'Darwin':
-            print("  - Microsoft Remote Desktop (from App Store)")
-            print("  - Or any RDP client that handles .rdp files")
-        elif system == 'Linux':
-            print("  - sudo apt install xfreerdp2-x11  # Ubuntu/Debian")
-            print("  - sudo dnf install freerdp        # Fedora")
-            print("  - sudo pacman -S freerdp          # Arch")
         print(f"\nManual connection:")
         print(f"  Server: {address}:{port}")
         print(f"  Username: {user}")
