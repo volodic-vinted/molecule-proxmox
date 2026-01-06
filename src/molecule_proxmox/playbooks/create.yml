@@ -101,10 +101,11 @@
                 if (ra.rc.p.os_type | d('linux')) == 'linux'
                 else {}
               )
-            | combine(
+             | combine(
                 {
                   'user': options.winrm_user | d(ra.rc.p.ciuser) | d('Administrator'),
                   'port': options.winrm_port | d(5985),
+                  'rdp_port': options.rdp_port | d(3389),
                   'password': options.winrm_password | d(ra.rc.p.cipassword) | d(omit),
                   'winrm_transport': options.winrm_transport | d('ntlm'),
                   'winrm_cert_validation': options.winrm_cert_validation | d('ignore')

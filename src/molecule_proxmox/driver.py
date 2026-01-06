@@ -79,7 +79,7 @@ class Proxmox(Driver):
                 if os_type == "windows":
                     LOG.info('Opening RDP connection to Windows instance')
                     rdp_launcher = os.path.join(os.path.dirname(__file__), "rdp_launcher.py")
-                    return "python3 " + rdp_launcher + " {{address}} {{user}} {{port}} {{password}}"
+                    return "python3 " + rdp_launcher + " {{address}} {{user}} {{rdp_port}} {{password}}"
             except (StopIteration, IOError, KeyError):
                 # If cannot determine os - fall back to ssh
                 pass
