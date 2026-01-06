@@ -118,7 +118,7 @@ def query_vm(module, proxmox, vm):
             else:
                 module.fail_json(msg=str(e))
         if reply and 'result' in reply:
-            addresses = i2a(reply['result'])
+            addresses = i2a(module, reply['result'])
             if len(addresses) > 0:
                 return addresses   # Found at least one address.
         timeout = timeout - 1
@@ -131,7 +131,7 @@ def query_vm(module, proxmox, vm):
     module.fail_json(msg=msg)
 
 
-def i2a(interfaces):
+def i2a(module, interfaces):
     """
     Extract the non-loopback IPv4 addresses from
     network-get-interfaces results.
@@ -162,11 +162,12 @@ def i2a(interfaces):
         ...
         }
 
-        i2a(reply['results'])
+        i2a(module, reply['results'])
         ['192.168.136.176']
 
     """
     addrs = []
+    module.warn("====== TEMPORARY MESSAGE ======")
     for interface in interfaces:
         interface_name = interface.get('name', '')
 
