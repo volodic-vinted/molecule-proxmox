@@ -69,7 +69,6 @@ class Proxmox(Driver):
     @property
     def login_cmd_template(self):
         """Return login command template based on instance OS type."""
-        # Try to determine which instance we're logging into
         instance_name = self._get_target_instance_name()
 
         if instance_name:
@@ -79,11 +78,10 @@ class Proxmox(Driver):
 
                 if os_type == "windows":
                     LOG.info('Opening RDP connection to Windows instance')
-                    # Use Python script to open RDP connection with system's default client
                     rdp_launcher = os.path.join(os.path.dirname(__file__), "rdp_launcher.py")
                     return "python3 " + rdp_launcher + " {{address}} {{user}} {{port}} {{password}}"
             except (StopIteration, IOError, KeyError):
-                # If we can't determine the instance, fall back to SSH
+                # If cannot determine os - fall back to ssh
                 pass
 
         connection_options = " ".join(self.ssh_connection_options)

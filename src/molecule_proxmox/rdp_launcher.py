@@ -18,8 +18,6 @@ from pathlib import Path
 
 def create_rdp_file(address, user, port=3389, password=None):
     """Create a temporary .rdp file with connection settings."""
-    # Note: Storing passwords in RDP files is not directly supported for security reasons.
-    # The password parameter is used for command-line clients, not stored in the RDP file.
     rdp_content = f"""screen mode id:i:2
 use multimon:i:0
 desktopwidth:i:1920
@@ -68,7 +66,6 @@ rdgiskdcproxy:i:0
 kdcproxyname:s:
 username:s:{user}
 """
-    # Create temporary file
     fd, rdp_file = tempfile.mkstemp(suffix='.rdp', text=True)
     try:
         with os.fdopen(fd, 'w') as f:
@@ -80,13 +77,10 @@ username:s:{user}
 
 
 def launch_rdp_macos(address, user, port=3389, password=None):
-    """Launch RDP on macOS."""
     print(f"Opening RDP connection to {address}:{port} as {user}...")
-    
-    # Build RDP URL with optional password
     rdp_url = f"rdp://full%20address=s:{address}:{port}&username=s:{user}"
     if password:
-        # Note: Some RDP clients on macOS don't support password in URL for security reasons
+        # Not working on macos for some reason, but included for completeness and future fix
         rdp_url += f"&password=s:{password}"
     
     try:
@@ -130,7 +124,6 @@ def launch_rdp_macos(address, user, port=3389, password=None):
 
 
 def launch_rdp_linux(address, user, port=3389, password=None):
-    """Launch RDP on Linux."""
     print(f"Opening RDP connection to {address}:{port} as {user}...")
 
     rdp_clients = [
@@ -156,7 +149,6 @@ def launch_rdp_linux(address, user, port=3389, password=None):
 
 
 def launch_rdp_windows(address, user, port=3389, password=None):
-    """Launch RDP on Windows."""
     print(f"Opening RDP connection to {address}:{port} as {user}...")
 
     try:

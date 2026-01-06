@@ -59,4 +59,3 @@
 
         - name: "Gather facts (Windows)."
           ansible.builtin.setup:
-
