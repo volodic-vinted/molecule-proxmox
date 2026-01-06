@@ -79,7 +79,7 @@ class Proxmox(Driver):
                 if os_type == "windows":
                     LOG.info('Opening RDP connection to Windows instance')
                     rdp_launcher = os.path.join(os.path.dirname(__file__), "rdp_launcher.py")
-                    return "python3 " + rdp_launcher + " {{address}} {{user}} {{rdp_port}} {{password}}"
+                    return "python3 " + rdp_launcher + " {address} {user} {rdp_port} {password}"
             except (StopIteration, IOError, KeyError):
                 # If cannot determine os - fall back to ssh
                 pass
@@ -119,7 +119,17 @@ class Proxmox(Driver):
 
     def login_options(self, instance_name):
         d = {"instance": instance_name}
-        return util.merge_dicts(d, self._get_instance_config(instance_name))
+        instance_config = self._get_instance_config(instance_name)
+
+        # Ensure rdp_port exists for Windows instances (backward compatibility)
+        if instance_config.get("os_type") == "windows" and "rdp_port" not in instance_config:
+            instance_config["rdp_port"] = 3389
+
+        # Ensure password exists for Windows instances (may be None/empty)
+        if instance_config.get("os_type") == "windows" and "password" not in instance_config:
+            instance_config["password"] = ""
+
+        return util.merge_dicts(d, instance_config)
 
     def ansible_connection_options(self, instance_name):
         try:
